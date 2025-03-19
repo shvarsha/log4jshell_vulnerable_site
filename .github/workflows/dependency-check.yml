@@ -1,0 +1,58 @@
+name: Vulnerability Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y curl jq
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy Scan on Dependencies
+        run: |
+          mkdir -p reports
+          trivy fs --scanners vuln,secret --format sarif --output reports/trivy-report.sarif .
+
+      - name: Verify SARIF File
+        run: ls -l reports/
+
+      - name: Save SARIF as Artifact (For Private Repos)
+        uses: actions/upload-artifact@v4  # Use v4 (latest stable version)
+        with:
+          name: sarif-reports
+          path: reports/trivy-report.sarif
+
+  semgrep-code-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep for Code Vulnerabilities
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: "p/default"
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Save SARIF as Artifact (For Private Repos)
+        uses: actions/upload-artifact@v4  # Use v4 (latest stable version)
+        with:
+          name: sarif-reports
+          path: reports/semgrep.sarif
