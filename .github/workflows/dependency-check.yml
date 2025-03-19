@@ -28,7 +28,7 @@ jobs:
       - name: Run Trivy Scan on Dependencies
         run: |
           mkdir -p reports
-          trivy fs --scanners vuln,secret --format sarif --output reports/trivy-report.sarif .
+          trivy fs --scanners vuln,secret --format json --output reports/trivy-report.json .
 
       - name: Verify SARIF File
         run: ls -l reports/
@@ -37,22 +37,25 @@ jobs:
         uses: actions/upload-artifact@v4  # Use v4 (latest stable version)
         with:
           name: sarif-reports
-          path: reports/trivy-report.sarif
+          path: reports/trivy-report.json
 
-  semgrep-code-scan:
+  semgrep-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep for Code Vulnerabilities
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: "p/default"
-          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - name: Install Semgrep
+        run: |
+          pip install semgrep
 
-      - name: Save SARIF as Artifact (For Private Repos)
-        uses: actions/upload-artifact@v4  # Use v4 (latest stable version)
+      - name: Run Semgrep Scan (JSON Output)
+        run: |
+          mkdir -p reports
+          semgrep scan --config=auto --json > reports/semgrep-report.json
+
+      - name: Save Semgrep JSON Report as Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: sarif-reports
-          path: reports/semgrep.sarif
+          name: semgrep-report
+          path: reports/semgrep-report.json
