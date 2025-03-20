@@ -25,18 +25,27 @@ jobs:
           sudo apt-get install -y curl jq
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
 
-      - name: Run Trivy Scan on Dependencies
+      - name: Run Trivy Scan with Categories
         run: |
           mkdir -p reports
-          trivy fs --scanners vuln,secret --format json --output reports/trivy-report.json .
+          trivy fs --scanners vuln,secret,misc \
+            --security-checks vuln,config,secret,license \
+            --vuln-type library \
+            --format json --output reports/trivy-report.json .
 
-      - name: Verify SARIF File
-        run: ls -l reports/
+      - name: Convert Trivy JSON to SARIF
+        run: |
+          trivy convert --format sarif --input reports/trivy-report.json --output reports/trivy-report.sarif
 
-      - name: Save SARIF as Artifact (For Private Repos)
-        uses: actions/upload-artifact@v4  # Use v4 (latest stable version)
+      - name: Upload SARIF to GitHub Security Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          name: sarif-reports
+          sarif_file: reports/trivy-report.sarif
+
+      - name: Save Trivy JSON Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-json-report
           path: reports/trivy-report.json
 
   semgrep-scan:
