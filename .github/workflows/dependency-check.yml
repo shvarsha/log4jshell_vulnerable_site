@@ -28,8 +28,8 @@ jobs:
       - name: Run Trivy Scan with Categories
         run: |
           mkdir -p reports
-          trivy fs --scanners vuln,secret,misc \
-            --security-checks vuln,config,secret,license \
+          trivy fs --scanners vuln,misconfig,secret,license \
+            --security-checks vuln,misconfig,secret,license \
             --vuln-type library \
             --format json --output reports/trivy-report.json .
 
