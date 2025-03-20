@@ -35,7 +35,7 @@ jobs:
 
       - name: Convert Trivy JSON to SARIF
         run: |
-          trivy convert --format sarif --input reports/trivy-report.json --output reports/trivy-report.sarif
+          trivy convert --format sarif reports/trivy-report.json > reports/trivy-report.sarif
 
       - name: Upload SARIF to GitHub Security Code Scanning
         uses: github/codeql-action/upload-sarif@v3
